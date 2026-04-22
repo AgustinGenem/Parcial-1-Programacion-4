@@ -16,3 +16,7 @@ class ProductoCreate(SQLModel):
     precio: float = Field(gt=0)
     descripcion: Optional[str] = Field(default=None, max_length=300)
     categoria_id: Optional[int] = Field(default=None)
+    
+class ProductoIngredienteCreate(SQLModel):
+    ingrediente_id: int
+    cantidad: float = Field(gt=0)

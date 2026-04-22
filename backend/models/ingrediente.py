@@ -6,9 +6,11 @@ if TYPE_CHECKING:
 
 
 class Ingrediente(SQLModel, table=True):
+    """Modelo para Ingrediente"""
+    
     id: Optional[int] = Field(default=None, primary_key=True)
     nombre: str = Field(min_length=2, max_length=50)
     unidad: str = Field(max_length=20)
     
-    # Relacion N:N hacia producto
+    # Relación N:N hacia productos (a través de ProductoIngrediente)
     producto_links: List["ProductoIngrediente"] = Relationship(back_populates="ingrediente")

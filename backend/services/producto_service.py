@@ -1,0 +1,79 @@
+from fastapi import HTTPException
+from sqlmodel import Session
+from models.producto import Producto
+from models.producto_ingrediente import ProductoIngrediente
+from backend.schemas import ProductoIngredienteCreate
+from uow import UnitOfWork
+
+
+class ProductoService:
+
+    def __init__(self, session: Session):
+        self.uow = UnitOfWork(session)
+
+    def get_all(self, nombre=None, categoria_id=None, offset=0, limit=10):
+        if nombre and categoria_id:
+            return self.uow.productos.find_by_nombre_y_categoria(nombre, categoria_id, offset, limit)
+        elif nombre:
+            return self.uow.productos.find_by_nombre(nombre)[offset:offset + limit]
+        elif categoria_id:
+            return self.uow.productos.find_by_categoria(categoria_id, offset, limit)
+        return self.uow.productos.get_all(offset, limit)
+
+    def get_by_id(self, producto_id: int) -> Producto:
+        producto = self.uow.productos.get_by_id(producto_id)
+        if not producto:
+            raise HTTPException(status_code=404, detail="Producto no encontrado")
+        return producto
+
+    def create(self, producto: Producto) -> Producto:
+        producto = self.uow.productos.create(producto)
+        self.uow.commit()
+        self.uow.session.refresh(producto)
+        return producto
+
+    def update(self, producto_id: int, datos: Producto) -> Producto:
+        producto = self.get_by_id(producto_id)
+        producto.nombre = datos.nombre
+        producto.precio = datos.precio
+        producto.descripcion = datos.descripcion
+        producto.categoria_id = datos.categoria_id
+        producto = self.uow.productos.update(producto)
+        self.uow.commit()
+        self.uow.session.refresh(producto)
+        return producto
+
+    def delete(self, producto_id: int) -> None:
+        self.get_by_id(producto_id)
+        self.uow.productos.delete(producto_id)
+        self.uow.commit()
+
+    def agregar_ingrediente(
+        self, producto_id: int, datos: ProductoIngredienteCreate
+    ) -> ProductoIngrediente:
+        self.get_by_id(producto_id)
+
+        existente = self.uow.producto_ingredientes.find_by_producto_e_ingrediente(
+            producto_id, datos.ingrediente_id
+        )
+        if existente:
+            raise HTTPException(status_code=400, detail="El ingrediente ya está en el producto")
+
+        link = ProductoIngrediente(
+            producto_id=producto_id,
+            ingrediente_id=datos.ingrediente_id,
+            cantidad=datos.cantidad
+        )
+        self.uow.producto_ingredientes.create(link)
+        self.uow.commit()
+        self.uow.session.refresh(link)
+        return link
+
+    def quitar_ingrediente(self, producto_id: int, ingrediente_id: int) -> None:
+        link = self.uow.producto_ingredientes.find_by_producto_e_ingrediente(
+            producto_id, ingrediente_id
+        )
+        if not link:
+            raise HTTPException(status_code=404, detail="Relación no encontrada")
+        self.uow.session.delete(link)
+        self.uow.commit()
