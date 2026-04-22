@@ -2,7 +2,7 @@ from fastapi import HTTPException
 from sqlmodel import Session
 from models.producto import Producto
 from models.producto_ingrediente import ProductoIngrediente
-from backend.schemas import ProductoIngredienteCreate
+from schemas import ProductoIngredienteCreate
 from uow import UnitOfWork
 
 
