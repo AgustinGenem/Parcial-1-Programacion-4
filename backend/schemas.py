@@ -20,3 +20,15 @@ class ProductoCreate(SQLModel):
 class ProductoIngredienteCreate(SQLModel):
     ingrediente_id: int
     cantidad: float = Field(gt=0)
+
+class ProductoIngredinenteRead(SQLModel):
+    ingrediente_id: int
+    cantidad: float = Field(gt=0)
+
+class ProductoRead(SQLModel):
+    id: int
+    nombre: str
+    precio: float
+    descripcion: Optional[str] = None
+    categoria_id: Optional[int] = None
+    ingrediente_links: list[ProductoIngredinenteRead] = []

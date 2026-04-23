@@ -3,7 +3,7 @@ from typing import Annotated, Optional
 from sqlmodel import Session
 from database import get_session
 from models.producto import Producto
-from schemas import ProductoIngredienteCreate
+from schemas import ProductoCreate, ProductoIngredienteCreate, ProductoRead
 from services.producto_service import ProductoService
 
 router = APIRouter(prefix="/productos", tags=["Productos"])
@@ -17,7 +17,7 @@ def get_producto_service(session: SessionDep) -> ProductoService:
 ProductoServiceDep = Annotated[ProductoService, Depends(get_producto_service)]
 
 
-@router.get("/", response_model=list[Producto])
+@router.get("/", response_model=list[ProductoRead])
 def get_productos(
     service: ProductoServiceDep,
     nombre: Annotated[Optional[str], Query(max_length=100)] = None,
@@ -28,17 +28,17 @@ def get_productos(
     return service.get_all(nombre, categoria_id, offset, limit)
 
 
-@router.get("/{producto_id}", response_model=Producto)
+@router.get("/{producto_id}", response_model=ProductoRead)
 def get_producto(producto_id: int, service: ProductoServiceDep):
     return service.get_by_id(producto_id)
 
 
-@router.post("/", response_model=Producto, status_code=201)
+@router.post("/", response_model=ProductoRead, status_code=201)
 def crear_producto(producto: Producto, service: ProductoServiceDep):
     return service.create(producto)
 
 
-@router.put("/{producto_id}", response_model=Producto)
+@router.put("/{producto_id}", response_model=ProductoRead)
 def editar_producto(producto_id: int, datos: Producto, service: ProductoServiceDep):
     return service.update(producto_id, datos)
 
@@ -47,6 +47,9 @@ def editar_producto(producto_id: int, datos: Producto, service: ProductoServiceD
 def eliminar_producto(producto_id: int, service: ProductoServiceDep):
     service.delete(producto_id)
 
+@router.get("/{producto_id}/ingredientes")
+def get_ingredientes_producto(producto_id: int, service: ProductoServiceDep):
+    return service.get_ingredientes(producto_id)
 
 @router.post("/{producto_id}/ingredientes", status_code=201)
 def agregar_ingrediente(
